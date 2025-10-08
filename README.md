@@ -6,6 +6,7 @@ An offline-first Android application for generating balanced breakfast, lunch, s
 
 - 💾 **Private by design** – all preferences and history are stored locally using DataStore.
 - 🥗 **Customisable meal candidates** – add, edit, or remove options for breakfast, lunch, snacks, and dinner.
+- 🍛 **South Indian & diabetes-friendly focus** – default dishes highlight traditional millet- and lentil-forward plates that stay low on the glycaemic index while providing fibre and protein-rich variety.
 - 📅 **Unique daily plans** – generate multi-day menus that avoid repeating recent dishes.
 - 🧾 **Plan history** – review previously generated plans to keep track of what you have eaten.
 
@@ -17,7 +18,7 @@ An offline-first Android application for generating balanced breakfast, lunch, s
 
 > **Note:** To keep the repository free of binary artifacts, the Gradle wrapper JAR is stored as a Base64 text file (`gradle/wrapper/gradle-wrapper.jar.base64`). When you run any `./gradlew` command the script reconstructs the JAR automatically using the system `base64` utility. Ensure that tool is available on your PATH (it ships with macOS, Linux, and Git Bash on Windows).
 
-When launched, the app loads with a starter set of nutritious meal ideas. Add your own dishes, then tap **Generate Plan** to produce a new schedule. Each plan is saved so future generations can avoid repeats.
+When launched, the app loads with a curated set of South Indian, diabetes-friendly meal ideas. Each candidate carries dietary tags (South Indian, Low GI, fibre-rich, etc.) that the planner uses to keep recommendations wholesome. Add your own dishes—optionally adjusting the dietary tags—and tap **Generate Plan** to produce a new schedule. Each plan is saved so future generations can avoid repeats while still respecting the health focus.
 
 ## Previewing and testing the app
 

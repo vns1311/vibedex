@@ -8,6 +8,7 @@ import com.example.vibedex.model.DailyMealPlan
 import com.example.vibedex.model.MealCandidate
 import com.example.vibedex.model.MealPlannerState
 import com.example.vibedex.model.MealType
+import com.example.vibedex.model.DietaryTag
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,11 +33,21 @@ class MealPlannerViewModel(private val repository: MealPlannerRepository) : View
         }
     }
 
-    fun addCandidate(type: MealType, name: String, notes: String) {
+    private val requiredTags = setOf(DietaryTag.SOUTH_INDIAN, DietaryTag.DIABETES_FRIENDLY)
+
+    fun addCandidate(type: MealType, name: String, notes: String, tags: Set<DietaryTag>) {
         val trimmedName = name.trim()
         if (trimmedName.isEmpty()) return
         viewModelScope.launch {
-            repository.addCandidate(type, MealCandidate(trimmedName, notes.trim()))
+            val normalizedTags = if (tags.isEmpty()) requiredTags else tags
+            repository.addCandidate(
+                type,
+                MealCandidate(
+                    name = trimmedName,
+                    nutritionNotes = notes.trim(),
+                    tags = normalizedTags + requiredTags
+                )
+            )
         }
     }
 
@@ -73,15 +84,25 @@ class MealPlannerViewModel(private val repository: MealPlannerRepository) : View
 
             MealType.defaultOrder.forEach { type ->
                 val options = candidates[type].orEmpty()
+                val eligible = options.filter { candidate ->
+                    requiredTags.all { it in candidate.tags } && DietaryTag.LOW_GLYCEMIC in candidate.tags
+                }
+                val nutrientBalanced = eligible.ifEmpty {
+                    options.filter { candidate ->
+                        requiredTags.all { it in candidate.tags }
+                    }
+                }
                 val usedRecently = existingMeals[type].orEmpty().toMutableSet()
                 usedRecently += results.mapNotNull { it.meals[type]?.name?.lowercase() }
 
-                val available = options.filterNot { option ->
+                val availablePool = nutrientBalanced.ifEmpty { options }
+                val available = availablePool.filterNot { option ->
                     option.name.lowercase() in usedRecently
                 }
 
                 val chosen = when {
                     available.isNotEmpty() -> available.random(random)
+                    availablePool.isNotEmpty() -> availablePool.random(random)
                     options.isNotEmpty() -> options.random(random)
                     else -> MealCandidate("Add options for ${type.displayName}")
                 }
@@ -101,10 +122,34 @@ class MealPlannerViewModel(private val repository: MealPlannerRepository) : View
     }
 
     private fun defaultFallback(type: MealType): List<MealCandidate> = when (type) {
-        MealType.BREAKFAST -> listOf(MealCandidate("Fresh fruit bowl", "Natural sugars"))
-        MealType.LUNCH -> listOf(MealCandidate("Seasonal grain bowl", "Balanced macros"))
-        MealType.SNACK -> listOf(MealCandidate("Yogurt and seeds", "Protein boost"))
-        MealType.DINNER -> listOf(MealCandidate("Roasted veggies & beans", "Plant power"))
+        MealType.BREAKFAST -> listOf(
+            MealCandidate(
+                name = "Vegetable pesarattu",
+                nutritionNotes = "Green gram crepe with ginger chutney",
+                tags = requiredTags + DietaryTag.LOW_GLYCEMIC + DietaryTag.HIGH_PROTEIN
+            )
+        )
+        MealType.LUNCH -> listOf(
+            MealCandidate(
+                name = "Thalipeeth with curd",
+                nutritionNotes = "Multi-grain flatbread with probiotic curd",
+                tags = requiredTags + DietaryTag.LOW_GLYCEMIC + DietaryTag.FIBER_RICH
+            )
+        )
+        MealType.SNACK -> listOf(
+            MealCandidate(
+                name = "Masala sundal cup",
+                nutritionNotes = "Chickpeas tempered with curry leaves",
+                tags = requiredTags + DietaryTag.LOW_GLYCEMIC + DietaryTag.HIGH_PROTEIN
+            )
+        )
+        MealType.DINNER -> listOf(
+            MealCandidate(
+                name = "Drumstick sambar with millet idiyappam",
+                nutritionNotes = "Light evening sambar with steamed millet noodles",
+                tags = requiredTags + DietaryTag.LOW_GLYCEMIC + DietaryTag.HEART_HEALTHY
+            )
+        )
     }
 }
 

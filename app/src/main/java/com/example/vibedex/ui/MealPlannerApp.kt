@@ -13,10 +13,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +49,7 @@ import com.example.vibedex.model.MealCandidate
 import com.example.vibedex.model.MealPlan
 import com.example.vibedex.model.MealPlannerState
 import com.example.vibedex.model.MealType
+import com.example.vibedex.model.DietaryTag
 import com.example.vibedex.ui.theme.MealPlannerTheme
 import kotlinx.coroutines.launch
 
@@ -106,7 +110,7 @@ private fun LoadingScreen() {
 @Composable
 private fun MealPlannerContent(
     state: MealPlannerUiState,
-    onAddCandidate: (MealType, String, String) -> Unit,
+    onAddCandidate: (MealType, String, String, Set<DietaryTag>) -> Unit,
     onRemoveCandidate: (MealType, MealCandidate) -> Unit
 ) {
     val addDialogState = remember { mutableStateOf<MealType?>(null) }
@@ -140,8 +144,8 @@ private fun MealPlannerContent(
         AddCandidateDialog(
             mealType = type,
             onDismiss = { addDialogState.value = null },
-            onAdd = { name, notes ->
-                onAddCandidate(type, name, notes)
+            onAdd = { name, notes, tags ->
+                onAddCandidate(type, name, notes, tags)
                 addDialogState.value = null
             }
         )
@@ -162,8 +166,19 @@ private fun SectionTitle(text: String) {
 private fun MealPlannerContentPreview() {
     val previewCandidates = MealType.defaultOrder.associateWith { type ->
         listOf(
-            MealCandidate("${type.displayName} idea 1", "Wholesome option"),
-            MealCandidate("${type.displayName} idea 2")
+            MealCandidate(
+                name = "${type.displayName} idea 1",
+                nutritionNotes = "Wholesome option",
+                tags = setOf(
+                    DietaryTag.SOUTH_INDIAN,
+                    DietaryTag.DIABETES_FRIENDLY,
+                    DietaryTag.LOW_GLYCEMIC
+                )
+            ),
+            MealCandidate(
+                name = "${type.displayName} idea 2",
+                tags = setOf(DietaryTag.SOUTH_INDIAN, DietaryTag.DIABETES_FRIENDLY)
+            )
         )
     }
 
@@ -193,7 +208,7 @@ private fun MealPlannerContentPreview() {
     MealPlannerTheme {
         MealPlannerContent(
             state = previewState,
-            onAddCandidate = { _, _, _ -> },
+            onAddCandidate = { _, _, _, _ -> },
             onRemoveCandidate = { _, _ -> }
         )
     }
@@ -245,6 +260,7 @@ private fun CandidateRow(
                 subtitle = candidate.nutritionNotes,
                 onRemove = { onRemoveCandidate(candidate) }
             )
+            TagRow(tags = candidate.tags)
         }
     }
 }
@@ -270,6 +286,30 @@ private fun RowWithRemove(
                 imageVector = Icons.Filled.Delete,
                 contentDescription = "Remove"
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TagRow(tags: Set<DietaryTag>) {
+    if (tags.isEmpty()) return
+    Spacer(modifier = Modifier.height(8.dp))
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        tags.sortedBy { it.label }.forEach { tag ->
+            Surface(
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                shape = MaterialTheme.shapes.small
+            ) {
+                Text(
+                    text = tag.label,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
         }
     }
 }
@@ -305,6 +345,7 @@ private fun DailyPlanRow(day: DailyMealPlan) {
                 if (meal.nutritionNotes.isNotBlank()) {
                     Text(text = meal.nutritionNotes, style = MaterialTheme.typography.bodySmall)
                 }
+                TagRow(tags = meal.tags)
             }
         }
     }
@@ -321,11 +362,17 @@ private fun GeneratePlanButton(onGenerate: () -> Unit) {
 private fun AddCandidateDialog(
     mealType: MealType,
     onDismiss: () -> Unit,
-    onAdd: (String, String) -> Unit
+    onAdd: (String, String, Set<DietaryTag>) -> Unit
 ) {
     val nameState = remember { mutableStateOf("") }
     val notesState = remember { mutableStateOf("") }
     val errorState = remember { mutableStateOf(false) }
+    val southIndianState = remember { mutableStateOf(true) }
+    val diabetesFriendlyState = remember { mutableStateOf(true) }
+    val lowGiState = remember { mutableStateOf(true) }
+    val highProteinState = remember { mutableStateOf(false) }
+    val fiberRichState = remember { mutableStateOf(false) }
+    val heartHealthyState = remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -347,6 +394,39 @@ private fun AddCandidateDialog(
                     onValueChange = { notesState.value = it },
                     label = { Text("Nutrition notes (optional)") }
                 )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(text = "Tags", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                Spacer(modifier = Modifier.height(8.dp))
+                TagCheckbox(
+                    label = DietaryTag.SOUTH_INDIAN.label,
+                    checked = southIndianState.value,
+                    onCheckedChange = { southIndianState.value = it }
+                )
+                TagCheckbox(
+                    label = DietaryTag.DIABETES_FRIENDLY.label,
+                    checked = diabetesFriendlyState.value,
+                    onCheckedChange = { diabetesFriendlyState.value = it }
+                )
+                TagCheckbox(
+                    label = DietaryTag.LOW_GLYCEMIC.label,
+                    checked = lowGiState.value,
+                    onCheckedChange = { lowGiState.value = it }
+                )
+                TagCheckbox(
+                    label = DietaryTag.HIGH_PROTEIN.label,
+                    checked = highProteinState.value,
+                    onCheckedChange = { highProteinState.value = it }
+                )
+                TagCheckbox(
+                    label = DietaryTag.FIBER_RICH.label,
+                    checked = fiberRichState.value,
+                    onCheckedChange = { fiberRichState.value = it }
+                )
+                TagCheckbox(
+                    label = DietaryTag.HEART_HEALTHY.label,
+                    checked = heartHealthyState.value,
+                    onCheckedChange = { heartHealthyState.value = it }
+                )
             }
         },
         confirmButton = {
@@ -354,9 +434,22 @@ private fun AddCandidateDialog(
                 if (nameState.value.isBlank()) {
                     errorState.value = true
                 } else {
-                    onAdd(nameState.value, notesState.value)
+                    val tags = mutableSetOf<DietaryTag>()
+                    if (southIndianState.value) tags += DietaryTag.SOUTH_INDIAN
+                    if (diabetesFriendlyState.value) tags += DietaryTag.DIABETES_FRIENDLY
+                    if (lowGiState.value) tags += DietaryTag.LOW_GLYCEMIC
+                    if (highProteinState.value) tags += DietaryTag.HIGH_PROTEIN
+                    if (fiberRichState.value) tags += DietaryTag.FIBER_RICH
+                    if (heartHealthyState.value) tags += DietaryTag.HEART_HEALTHY
+                    onAdd(nameState.value, notesState.value, tags)
                     nameState.value = ""
                     notesState.value = ""
+                    southIndianState.value = true
+                    diabetesFriendlyState.value = true
+                    lowGiState.value = true
+                    highProteinState.value = false
+                    fiberRichState.value = false
+                    heartHealthyState.value = false
                 }
             }) {
                 Text("Add")
@@ -368,4 +461,21 @@ private fun AddCandidateDialog(
             }
         }
     )
+}
+
+@Composable
+private fun TagCheckbox(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(checked = checked, onCheckedChange = onCheckedChange)
+        Text(text = label, modifier = Modifier.padding(start = 8.dp))
+    }
 }
