@@ -62,7 +62,11 @@ WRAPPER_B64="$APP_HOME/gradle/wrapper/gradle-wrapper.jar.base64"
 if [ ! -f "$WRAPPER_JAR" ] && [ -f "$WRAPPER_B64" ]; then
   if command -v base64 >/dev/null 2>&1; then
     mkdir -p "$APP_HOME/gradle/wrapper"
-    base64 --decode "$WRAPPER_B64" > "$WRAPPER_JAR" || die "ERROR: Failed to decode Gradle wrapper JAR from base64"
+    if base64 --help 2>&1 | grep -q -- "--decode"; then
+      base64 --decode "$WRAPPER_B64" > "$WRAPPER_JAR"
+    else
+      base64 -d "$WRAPPER_B64" > "$WRAPPER_JAR"
+    fi || die "ERROR: Failed to decode Gradle wrapper JAR from base64"
   else
     die "ERROR: The 'base64' utility is required to unpack gradle/wrapper/gradle-wrapper.jar from base64"
   fi

@@ -25,8 +25,9 @@ echo location of your Java installation.
 goto fail
 
 :findJavaFromJavaHome
-set JAVA_HOME=%JAVA_HOME:~0,-1%
-set JAVA_EXE=%JAVA_HOME%\bin\java.exe
+set JAVA_HOME_DIR=%JAVA_HOME%
+if "%JAVA_HOME_DIR:~-1%"=="\" set JAVA_HOME_DIR=%JAVA_HOME_DIR:~0,-1%
+set JAVA_EXE=%JAVA_HOME_DIR%\bin\java.exe
 
 if exist "%JAVA_EXE%" goto execute
 
