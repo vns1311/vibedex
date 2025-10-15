@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">VibeDex Meal Planner</string>
+    <string name="generate_plan">Generate Plan</string>
+    <string name="meal_candidates">Meal Candidates</string>
+    <string name="plan_history">Plan History</string>
+</resources>

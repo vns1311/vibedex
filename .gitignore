@@ -1,0 +1,42 @@
+# Android/Gradle build outputs
+**/build/
+**/captures/
+**/.cxx/
+**/.externalNativeBuild/
+
+# IntelliJ/Android Studio files
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Local configuration
+local.properties
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# APKs / Bundles / Archives
+*.apk
+*.ap_*
+*.aab
+*.aar
+*.dex
+*.class
+*.jar
+*.war
+*.ear
+
+# Signing keys and profiles
+*.keystore
+*.jks
+*.pem
+*.cer
+*.p12
+
+# Profiling data
+*.hprof
+
+# Gradle caches
+.gradle/
